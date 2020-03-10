@@ -1,0 +1,5 @@
+# Dependencies that are additional to the root requirements.txt.
+bert-tensorflow==1.0.1
+requests==2.23.0
+tf_sentencepiece==0.1.83
+tqdm==4.26.0
