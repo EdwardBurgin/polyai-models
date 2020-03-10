@@ -2,7 +2,7 @@
 
 
 This section shares the intent detection models used in the benchmarking
-presented in *TODO*. These intent detectors are very lightweight
+presented in *TODO* (Update with benchmark paper URL). These intent detectors are very lightweight
 and can be trained even with a laptop cpu, while still having superior
 performance to some popular larger models. They also show very good
 performance in low data settings.

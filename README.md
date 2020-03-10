@@ -16,6 +16,7 @@ Tensorflow Hub URLs will be enough.
   * [ConveRT](#convert)
   * [Multi-Context ConveRT](#multi-context-convert)
   * [ConveRT finetuned on Ubuntu](#convert-finetuned-on-ubuntu)
+  * [Intent Detection Benchmarks](#intent-detection-benchmarks)
 * [Keras layers](#keras-layers)
 * [Encoder client](#encoder-client)
 * [Citations](#citations)
@@ -145,6 +146,10 @@ See [`encoder_client.py`](encoder_client.py) for code that computes these featur
 This is the multi-context ConveRT model, fine-tuned to the DSTC7 Ubuntu response ranking task. It has the exact same signatures as the extra context model, and has TFHub uri `http://models.poly-ai.com/ubuntu_convert/v1/model.tar.gz`. Note that this model requires prefixing the extra context features with `"0: "`, `"1: "`, `"2: "` etc.
 
 The [`dstc7/evaluate_encoder.py`](dstc7/evaluate_encoder.py) script demonstrates using this encoder to reproduce the results from [the ConveRT paper](https://arxiv.org/abs/1911.03688).
+
+## Intent Detection Benchmarks
+
+A set of intent detectors trained on top of ConveRT and other sentence encoders can be found in the [`intent_detection`](intent_detection) directory.
 
 # Keras layers
 
