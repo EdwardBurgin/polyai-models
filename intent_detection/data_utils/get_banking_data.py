@@ -1,7 +1,7 @@
 """Gets banking data from:
   https://github.com/PolyAI-LDN/task-specific-datasets/tree/master/banking_data
 
-Dataset paper: TODO
+Dataset paper: https://arxiv.org/abs/2003.04807
 
 Copyright PolyAI Limited.
 """

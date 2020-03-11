@@ -2,7 +2,8 @@
 
 
 This section shares the intent detection models used in the benchmarking
-presented in *TODO* (Update with benchmark paper URL). These intent detectors are very lightweight
+presented in [Efficient Intent Detection with Dual Sentence Encoders](https://arxiv.org/pdf/1903.05566.pdf). 
+These intent detectors are very lightweight
 and can be trained even with a laptop cpu, while still having superior
 performance to some popular larger models. They also show very good
 performance in low data settings.
@@ -53,7 +54,7 @@ Dataset released by Clinc AI composed of popular personal assistant queries.
 
 Dataset released by PolyAI composed of online banking queries.
 
-[Dataset paper](TODO) *TODO*,
+[Dataset paper](https://arxiv.org/abs/2003.04807),
 [Dataset repository](https://github.com/PolyAI-LDN/task-specific-datasets).
 
 ## Dataset comparison
@@ -202,12 +203,12 @@ When using these models in your work, or the banking dataset please cite our pap
 
 ```bibtex
 @inproceedings{Casanueva2020,
-    author      = {I{\~{n}}igo Casanueva and Tadas Temcinas and Matthew Henderson and Daniela Gerz and Ivan Vulic},
-    title       = {TODO},
+    author      = {I{\~{n}}igo Casanueva and Tadas Temcinas and Daniela Gerz and Matthew Henderson and Ivan Vulic},
+    title       = {Efficient Intent Detection with Dual Sentence Encoders},
     year        = {2020},
-    month       = {jul},
-    note        = {Data available at TODO},
-    url         = {TODO},
+    month       = {mar},
+    note        = {Data available at https://github.com/PolyAI-LDN/task-specific-datasets},
+    url         = {https://arxiv.org/abs/2003.04807},
     booktitle   = {Arxiv},
 }
 

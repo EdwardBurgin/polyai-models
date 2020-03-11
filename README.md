@@ -149,7 +149,7 @@ The [`dstc7/evaluate_encoder.py`](dstc7/evaluate_encoder.py) script demonstrates
 
 ## Intent Detection Benchmarks
 
-A set of intent detectors trained on top of ConveRT and other sentence encoders can be found in the [`intent_detection`](intent_detection) directory.
+A set of intent detectors trained on top of ConveRT and other sentence encoders can be found in the [`intent_detection`](intent_detection) directory. These are the intent detectors presented in [Efficient Intent Detection with Dual Sentence Encoders](https://arxiv.org/pdf/1903.05566.pdf). 
 
 # Keras layers
 
