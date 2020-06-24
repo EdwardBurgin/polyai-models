@@ -209,7 +209,7 @@ When using these models in your work, or the banking dataset please cite our pap
     month       = {mar},
     note        = {Data available at https://github.com/PolyAI-LDN/task-specific-datasets},
     url         = {https://arxiv.org/abs/2003.04807},
-    booktitle   = {Arxiv},
+    booktitle   = {Proceedings of the 2nd Workshop on NLP for ConvAI - ACL 2020},
 }
 
 ```
