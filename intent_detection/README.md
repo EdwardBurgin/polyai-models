@@ -2,7 +2,7 @@
 
 
 This section shares the intent detection models used in the benchmarking
-presented in [Efficient Intent Detection with Dual Sentence Encoders](https://arxiv.org/pdf/1903.05566.pdf). 
+presented in [Efficient Intent Detection with Dual Sentence Encoders](https://arxiv.org/abs/2003.04807). 
 These intent detectors are very lightweight
 and can be trained even with a laptop cpu, while still having superior
 performance to some popular larger models. They also show very good
