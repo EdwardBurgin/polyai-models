@@ -3,11 +3,19 @@
 After conflicts with tf_sentencepiece and tensorflow_text within conda env pointed to the necessity of a dockerfile. 
 
 Other useful commands:
+```python
 docker build -t tensorflow114 .
+```
+```
 docker run -it --gpus all -p 9000:9000 -v /media/aiops/nvme_new/EDWARD/nlp_code/tf_docker_share:/workspace/polyai-models tensorflow114
-Run a notebook and expose port 9000 to the internet: nohup jupyter notebook --ip 0.0.0.0 --port 9000 --no-browser --allow-root &
-cat nohup, to get the token.
+```
+Run a notebook and expose port 9000 to the internet: 
+```
+nohup jupyter notebook --ip 0.0.0.0 --port 9000 --no-browser --allow-root &
+```
+cat nohup, to get the token...  
 
+<br/><br/>
 
 [![PolyAI](polyai-logo.png)](https://poly-ai.com/)
 
