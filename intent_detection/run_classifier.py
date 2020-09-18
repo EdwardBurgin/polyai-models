@@ -16,7 +16,7 @@ import pandas as pd
 import glog
 import numpy as np
 import tensorflow as tf
-
+import resource
 from intent_detection.classifier import train_model
 from intent_detection.encoder_clients import get_encoder_client
 from intent_detection.utils import parse_args_and_hparams
@@ -24,6 +24,16 @@ from intent_detection.utils import parse_args_and_hparams
 _TRAIN = "train"
 _TEST = "test"
 
+def online_learning_sim_class_sample(train, nsamples=1):
+    nsamples=int(nsamples)
+    if nsamples=='full':
+        return train
+    newdf=pd.DataFrame(columns=['text','labels'])
+    for c in train.labels.unique():
+        temp=train.loc[train.labels==c][:nsamples]
+        newdf = newdf.append(temp)
+    #     break
+    return newdf.reset_index(drop=True)
 
 def _preprocess_data(encoder_client, hparams, data_dir):
     """Reads the data from the files, encodes it and parses the labels
@@ -45,6 +55,11 @@ def _preprocess_data(encoder_client, hparams, data_dir):
         train = pd.read_csv('/polyai-models/polyai-models/200909_train_huawei_wallet_60strat_min3_manyanswers.csv')
         val = pd.read_csv('/polyai-models/polyai-models/200909_val_huawei_wallet_10strat_min3_manyanswers.csv')
         train = train.append(val)
+        train.reset_index(drop=True, inplace=True)
+        train = train[['text','labels']]
+        val = val [['text','labels']]
+        test = test[['text','labels']]
+        train = online_learning_sim_class_sample(train, nsamples=hparams.data_regime)
         print('WALLET TRAIN SHAPE',train.shape)
         categories = train.labels.unique()
         labels[_TRAIN]=train.labels.values
@@ -117,6 +132,18 @@ def _main():
             validation_data=validation_data, verbose=verbose)
 
         _, acc = model.evaluate(encodings[_TEST], labels[_TEST], verbose=0)
+        print(_, 'loss of evaluation')
+        print('PREDICT')
+        pred = model.predict(encodings[_TEST], labels[_TEST])
+        
+        t = []
+        for r in [5]:
+            topk = pred.argsort(axis=1)[:,-r:]#[::-1]
+            t.append(sum([1 if i in topk[c] else 0 for c,i in enumerate(labels[_TEST])])/labels[_TEST].shape[0])
+        print('p@1',acc)
+        print('p@5',t[0])
+        print('memory:',memory_pred)
+        
         glog.info(f"Seed accuracy: {acc:.3f}")
         accs.append(acc)
         eval_acc_histories.append(eval_acc_history)
@@ -143,6 +170,8 @@ def _main():
     with tf.gfile.Open(
             os.path.join(parsed_args.output_dir, "results.json"), "w") as f:
         json.dump(results, f, indent=2)
+    memory_pred = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    print('MEMORY_PRED:', memory_pred)
 
 
 if __name__ == "__main__":

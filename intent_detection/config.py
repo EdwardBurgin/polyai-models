@@ -9,7 +9,7 @@ import tensorflow as tf
 
 default = tf.contrib.training.HParams(
     # model hparams
-    epochs=500,
+    epochs=120,
     learning_rate=0.7,
     lr_decay_pow=1,
     batch_size=32,
@@ -26,7 +26,7 @@ default = tf.contrib.training.HParams(
     task="banking",
     data_regime="full",
     eval_each_epoch=False,
-    seeds=10
+    seeds=1
 )
 
 
