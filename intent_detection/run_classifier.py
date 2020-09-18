@@ -12,7 +12,7 @@ Copyright PolyAI Limited.
 import csv
 import json
 import os
-
+import pandas as pd
 import glog
 import numpy as np
 import tensorflow as tf
@@ -38,40 +38,53 @@ def _preprocess_data(encoder_client, hparams, data_dir):
         categories, encodings, labels
 
     """
-    if hparams.data_regime == "full":
-        train_file = "train"
-    elif hparams.data_regime == "10":
-        train_file = "train_10"
-    elif hparams.data_regime == "30":
-        train_file = "train_30"
-    else:
-        glog.error(f"Invalid data regime: {hparams.data_regime}")
-    train_data = os.path.join(
-        data_dir, hparams.task, f"{train_file}.csv")
-    test_data = os.path.join(data_dir, hparams.task, "test.csv")
-    categories_file = os.path.join(data_dir, hparams.task, "categories.json")
-
-    with tf.gfile.Open(categories_file, "r") as categories_file:
-        categories = json.load(categories_file)
-
     labels = {}
     encodings = {}
+    if hparams.task=='wallet':
+        test = pd.read_csv('/polyai-models/polyai-models/200909_test_huawei_wallet_30strat_min3_manyanswers.csv')
+        train = pd.read_csv('/polyai-models/polyai-models/200909_train_huawei_wallet_60strat_min3_manyanswers.csv')
+        val = pd.read_csv('/polyai-models/polyai-models/200909_val_huawei_wallet_10strat_min3_manyanswers.csv')
+        train = train.append(val)
+        print('WALLET TRAIN SHAPE',train.shape)
+        categories = train.labels.unique()
+        labels[_TRAIN]=train.labels.values
+        encodings[_TRAIN] = encoder_client.encode_sentences(train.text.values)
+        labels[_TEST]=test.labels.values
+        encodings[_TEST] = encoder_client.encode_sentences(test.text.values)
+    else:
+        if hparams.data_regime == "full":
+            train_file = "train"
+        elif hparams.data_regime == "10":
+            train_file = "train_10"
+        elif hparams.data_regime == "30":
+            train_file = "train_30"
+        else:
+            glog.error(f"Invalid data regime: {hparams.data_regime}")
+        train_data = os.path.join(
+            data_dir, hparams.task, f"{train_file}.csv")
+        test_data = os.path.join(data_dir, hparams.task, "test.csv")
+        categories_file = os.path.join(data_dir, hparams.task, "categories.json")
 
-    with tf.gfile.Open(train_data, "r") as data_file:
-        data = np.array(list(csv.reader(data_file))[1:])
-        labels[_TRAIN] = data[:, 1]
-        encodings[_TRAIN] = encoder_client.encode_sentences(data[:, 0])
+        with tf.gfile.Open(categories_file, "r") as categories_file:
+            categories = json.load(categories_file)
 
-    with tf.gfile.Open(test_data, "r") as data_file:
-        data = np.array(list(csv.reader(data_file))[1:])
-        labels[_TEST] = data[:, 1]
-        encodings[_TEST] = encoder_client.encode_sentences(data[:, 0])
 
-    # convert labels to integers
-    labels = {
-        k: np.array(
-            [categories.index(x) for x in v]) for k, v in labels.items()
-    }
+
+        with tf.gfile.Open(train_data, "r") as data_file:
+            data = np.array(list(csv.reader(data_file))[1:])
+            labels[_TRAIN] = data[:, 1]
+            encodings[_TRAIN] = encoder_client.encode_sentences(data[:, 0])
+
+        with tf.gfile.Open(test_data, "r") as data_file:
+            data = np.array(list(csv.reader(data_file))[1:])
+            labels[_TEST] = data[:, 1]
+            encodings[_TEST] = encoder_client.encode_sentences(data[:, 0])
+
+        # convert labels to integers
+        labels = {
+            k: np.array(
+                [categories.index(x) for x in v]) for k, v in labels.items()
+        }
 
     return categories, encodings, labels
 
@@ -79,7 +92,7 @@ def _preprocess_data(encoder_client, hparams, data_dir):
 def _main():
     parsed_args, hparams = parse_args_and_hparams()
 
-    if hparams.task.lower() not in ["clinc", "hwu", "banking"]:
+    if hparams.task.lower() not in ["clinc", "hwu", "banking", "wallet"]:
         raise ValueError(f"{hparams.task} is not a valid task")
 
     encoder_client = get_encoder_client(hparams.encoder_type,
