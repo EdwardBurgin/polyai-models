@@ -8,10 +8,13 @@ usage:
 
 Copyright PolyAI Limited.
 """
+import os
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
+from datetime import datetime
 import csv
 import json
-import os
+
 import pandas as pd
 import glog
 import numpy as np
@@ -25,9 +28,12 @@ _TRAIN = "train"
 _TEST = "test"
 
 def online_learning_sim_class_sample(train, nsamples=1):
-    nsamples=int(nsamples)
+  
     if nsamples=='full':
         return train
+    else:
+        nsamples=int(nsamples)
+        
     newdf=pd.DataFrame(columns=['text','labels'])
     for c in train.labels.unique():
         temp=train.loc[train.labels==c][:nsamples]
@@ -54,60 +60,74 @@ def _preprocess_data(encoder_client, hparams, data_dir):
         test = pd.read_csv('/polyai-models/polyai-models/200909_test_huawei_wallet_30strat_min3_manyanswers.csv')
         train = pd.read_csv('/polyai-models/polyai-models/200909_train_huawei_wallet_60strat_min3_manyanswers.csv')
         val = pd.read_csv('/polyai-models/polyai-models/200909_val_huawei_wallet_10strat_min3_manyanswers.csv')
-        train = train.append(val)
-        train.reset_index(drop=True, inplace=True)
-        train = train[['text','labels']]
-        val = val [['text','labels']]
-        test = test[['text','labels']]
-        train = online_learning_sim_class_sample(train, nsamples=hparams.data_regime)
-        print('WALLET TRAIN SHAPE',train.shape)
-        categories = train.labels.unique()
-        labels[_TRAIN]=train.labels.values
-        encodings[_TRAIN] = encoder_client.encode_sentences(train.text.values)
-        labels[_TEST]=test.labels.values
-        encodings[_TEST] = encoder_client.encode_sentences(test.text.values)
+    elif hparams.task=='bank_split':
+        train=pd.read_csv('/workspace/polyai-models/banking_data/200911_train60_banking_data.csv')
+        val=pd.read_csv('/workspace/polyai-models/banking_data/200911_val10_banking_data.csv')
+        test=pd.read_csv('/workspace/polyai-models/banking_data/200911_test30_banking_data.csv')
+    elif hparams.task=='alliance':
+        train = pd.read_csv('/workspace/polyai-models/alliance_split_human/200908_alliance_train_60_human_paraphrase.csv')
+        val = pd.read_csv('/workspace/polyai-models/alliance_split_human/200908_alliance_val_10_human_paraphrase.csv')
+        test = pd.read_csv('/workspace/polyai-models/alliance_split_human/200908_alliance_test_30_human_paraphrase.csv')
     else:
-        if hparams.data_regime == "full":
-            train_file = "train"
-        elif hparams.data_regime == "10":
-            train_file = "train_10"
-        elif hparams.data_regime == "30":
-            train_file = "train_30"
-        else:
-            glog.error(f"Invalid data regime: {hparams.data_regime}")
-        train_data = os.path.join(
-            data_dir, hparams.task, f"{train_file}.csv")
-        test_data = os.path.join(data_dir, hparams.task, "test.csv")
-        categories_file = os.path.join(data_dir, hparams.task, "categories.json")
+        print('SELECT AGAIN.')
+    train = train.rename(columns={'question':'text'})
+    test = test.rename(columns={'question':'text'})
+    val = val.rename(columns={'question':'text'})
+    train = train.append(val)
+    train.reset_index(drop=True, inplace=True)
+    train = train[['text','labels']]
+    val = val [['text','labels']]
+    test = test[['text','labels']]
+    train = online_learning_sim_class_sample(train, nsamples=hparams.data_regime)
+    print('TRAIN SHAPE',train.shape)
+    categories = train.labels.unique()
+    labels[_TRAIN]=train.labels.values
+    encodings[_TRAIN] = encoder_client.encode_sentences(train.text.values)
+    labels[_TEST]=test.labels.values
+    encodings[_TEST] = encoder_client.encode_sentences(test.text.values)
+#         if hparams.data_regime == "full":
+#             train_file = "train"
+#         elif hparams.data_regime == "10":
+#             train_file = "train_10"
+#         elif hparams.data_regime == "30":
+#             train_file = "train_30"
+#         else:
+#             glog.error(f"Invalid data regime: {hparams.data_regime}")
+#         train_data = os.path.join(
+#             data_dir, hparams.task, f"{train_file}.csv")
+#         test_data = os.path.join(data_dir, hparams.task, "test.csv")
+#         categories_file = os.path.join(data_dir, hparams.task, "categories.json")
 
-        with tf.gfile.Open(categories_file, "r") as categories_file:
-            categories = json.load(categories_file)
+#         with tf.gfile.Open(categories_file, "r") as categories_file:
+#             categories = json.load(categories_file)
 
 
 
-        with tf.gfile.Open(train_data, "r") as data_file:
-            data = np.array(list(csv.reader(data_file))[1:])
-            labels[_TRAIN] = data[:, 1]
-            encodings[_TRAIN] = encoder_client.encode_sentences(data[:, 0])
+#         with tf.gfile.Open(train_data, "r") as data_file:
+#             data = np.array(list(csv.reader(data_file))[1:])
+#             labels[_TRAIN] = data[:, 1]
+#             encodings[_TRAIN] = encoder_client.encode_sentences(data[:, 0])
 
-        with tf.gfile.Open(test_data, "r") as data_file:
-            data = np.array(list(csv.reader(data_file))[1:])
-            labels[_TEST] = data[:, 1]
-            encodings[_TEST] = encoder_client.encode_sentences(data[:, 0])
+#         with tf.gfile.Open(test_data, "r") as data_file:
+#             data = np.array(list(csv.reader(data_file))[1:])
+#             labels[_TEST] = data[:, 1]
+#             encodings[_TEST] = encoder_client.encode_sentences(data[:, 0])
 
-        # convert labels to integers
-        labels = {
-            k: np.array(
-                [categories.index(x) for x in v]) for k, v in labels.items()
-        }
+#         # convert labels to integers
+#         labels = {
+#             k: np.array(
+#                 [categories.index(x) for x in v]) for k, v in labels.items()
+#         }
 
     return categories, encodings, labels
 
 
 def _main():
     parsed_args, hparams = parse_args_and_hparams()
+    
+    hparams.data_regime=over_ride_sample_no
 
-    if hparams.task.lower() not in ["clinc", "hwu", "banking", "wallet"]:
+    if hparams.task.lower() not in ["clinc", "hwu", "banking", "wallet", "alliance", "bank_split"]:
         raise ValueError(f"{hparams.task} is not a valid task")
 
     encoder_client = get_encoder_client(hparams.encoder_type,
@@ -133,16 +153,16 @@ def _main():
 
         _, acc = model.evaluate(encodings[_TEST], labels[_TEST], verbose=0)
         print(_, 'loss of evaluation')
-        print('PREDICT')
-        pred = model.predict(encodings[_TEST], labels[_TEST])
+#         print('PREDICT')
+#         pred = model.predict(encodings[_TEST], labels[_TEST])
         
-        t = []
-        for r in [5]:
-            topk = pred.argsort(axis=1)[:,-r:]#[::-1]
-            t.append(sum([1 if i in topk[c] else 0 for c,i in enumerate(labels[_TEST])])/labels[_TEST].shape[0])
-        print('p@1',acc)
-        print('p@5',t[0])
-        print('memory:',memory_pred)
+#         t = []
+#         for r in [5]:
+#             topk = pred.argsort(axis=1)[:,-r:]#[::-1]
+#             t.append(sum([1 if i in topk[c] else 0 for c,i in enumerate(labels[_TEST])])/labels[_TEST].shape[0])
+#         print('p@1',acc)
+# #         print('p@5',t[0])
+#         print('memory:',memory_pred)
         
         glog.info(f"Seed accuracy: {acc:.3f}")
         accs.append(acc)
@@ -152,7 +172,7 @@ def _main():
     variance = np.std(accs)
     glog.info(
         f"Average results:\n"
-        f"Accuracy: {average_acc:.3f}\n"
+        f"Accuracy {over_ride_sample_no}: {average_acc:.3f}\n"
         f"Variance: {variance:.3f}")
 
     results = {
@@ -170,9 +190,24 @@ def _main():
     with tf.gfile.Open(
             os.path.join(parsed_args.output_dir, "results.json"), "w") as f:
         json.dump(results, f, indent=2)
+        
     memory_pred = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
     print('MEMORY_PRED:', memory_pred)
-
+    
+    
+    start_time = datetime.now()
+    query_encoding = encoder_client.encode_sentences(['test'])
+    output = model.predict(query_encoding)
+    prediction = np.argmax(output)
+    end_time = datetime.now()
+    delta = end_time - start_time
+    print('TIME DELTA:', delta)
+    return (over_ride_sample_no, acc, memory_pred, delta)
 
 if __name__ == "__main__":
-    _main()
+    finfin=[]
+    for over_ride_sample_no in [1,2,3,5,10,20,'full']:
+        mainout=_main()
+        finfin.append(mainout)
+    for i in finfin:
+        print('finfin:',i)
