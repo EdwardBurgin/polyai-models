@@ -110,7 +110,15 @@ def get_encoder_client(encoder_type, cache_dir=None):
         encoder_client = CombinedEncoderClient([convert_encoder, laser_encoder, use_encoder])
     elif encoder_type.lower() == "sbert":
         encoder_client = SbertEncoderClient()
-    
+    elif encoder_type.lower() == "sbert_convert_use":
+        sbert_encoder = SbertEncoderClient()
+        use_encoder = UseEncoderClient(_USE_PATH)
+        convert_encoder = ConvertEncoderClient(_CONVERT_PATH)
+        encoder_client = CombinedEncoderClient([convert_encoder, sbert_encoder, use_encoder])
+    elif encoder_type.lower() == 'rf_tfidf':
+        encoder_client = None
+    elif encoder_type.lower() == 'sbert_cosine':
+        encoder_client = None
     else:
         raise ValueError(f"{encoder_type} is not a valid encoder type")
     return encoder_client

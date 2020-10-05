@@ -23,6 +23,8 @@ import resource
 from intent_detection.classifier import train_model
 from intent_detection.encoder_clients import get_encoder_client
 from intent_detection.utils import parse_args_and_hparams
+from sklearn.preprocessing import LabelEncoder
+from IPython.display import display
 
 _TRAIN = "train"
 _TEST = "test"
@@ -78,13 +80,30 @@ def _preprocess_data(encoder_client, hparams, data_dir):
     train = train[['text','labels']]
     val = val [['text','labels']]
     test = test[['text','labels']]
+    
+    if over_ride_no_classes!='full':
+        most_freq_classes = train.labels.value_counts().index[:over_ride_no_classes]
+        train = train.loc[train.labels.isin(most_freq_classes)]
+        test = test.loc[test.labels.isin(most_freq_classes)]
+        le=LabelEncoder()
+        train['labels'] = le.fit_transform(train.labels)
+        test['labels'] = le.transform(test.labels)
+
+    
     train = online_learning_sim_class_sample(train, nsamples=hparams.data_regime)
+    train.reset_index(drop=True, inplace=True)
+    test.reset_index(drop=True, inplace=True)
+    display(train.head())
+            
     print('TRAIN SHAPE',train.shape)
     categories = train.labels.unique()
     labels[_TRAIN]=train.labels.values
-    encodings[_TRAIN] = encoder_client.encode_sentences(train.text.values)
     labels[_TEST]=test.labels.values
-    encodings[_TEST] = encoder_client.encode_sentences(test.text.values)
+    if algo not in ['rf_tfidf','sbert_cosine']:
+
+        encodings[_TRAIN] = encoder_client.encode_sentences(train.text.values)
+        
+        encodings[_TEST] = encoder_client.encode_sentences(test.text.values)
 #         if hparams.data_regime == "full":
 #             train_file = "train"
 #         elif hparams.data_regime == "10":
@@ -119,8 +138,79 @@ def _preprocess_data(encoder_client, hparams, data_dir):
 #                 [categories.index(x) for x in v]) for k, v in labels.items()
 #         }
 
-    return categories, encodings, labels
+    return categories, encodings, labels, train, test
 
+def rf_tfidf(train, test):
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.metrics import accuracy_score
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    model = RandomForestClassifier()
+    trans = TfidfVectorizer()
+    train_text = trans.fit_transform(train.text)
+    test_text = trans.transform(test.text)
+    train['labels']=train.labels.astype(int)
+    print(train.labels.dtype)
+    model.fit(train_text, train.labels.values)
+    pred = model.predict(test_text)
+    acc = accuracy_score(test.labels, pred)
+    return acc
+
+def sbert_cosine(train, test):    
+    from sentence_transformers import SentenceTransformer
+    import time
+    import scipy
+
+    # sbert_model = 'roberta-large-nli-stsb-mean-tokens' #'distilbert-base-nli-mean-tokens'
+    sbert_model = 'distiluse-base-multilingual-cased'
+
+    model = SentenceTransformer(sbert_model)
+
+#     train_ques_embd = [model.encode(t)[0] for t in train.text]
+
+    print("SBERT + COSINE Model")
+    test_ques=test.text
+    # res1 = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    start_time = time.time()
+    # train_ques_embd = [model.encode(t)[0] for t in train.text]
+    train_ques_embd=model.encode(train.text)
+    end_time = time.time()
+    test_ques = model.encode(test.text)
+
+    train_intn=train.labels
+    test_intn=test.labels
+
+    # res2 = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
+    # print("Train Time = " + str(end_time-start_time) + " sec.")
+    # print("Memory Usage = " + str(res2-res1+res) + " MB")
+
+    top = 5
+    count = 0
+    count1 = 0
+    time_count = []
+    for c, i in enumerate(test_ques):
+        #     start_time = time.time()
+        #     test_q = test_ques[i]
+        #     test_q_emb = model.encode(test_q)
+            dist_vec = scipy.spatial.distance.cdist([i], train_ques_embd, 'cosine')[0]
+            pred_intn = train_intn[np.argmin(dist_vec)]
+#             pred_top_indx = np.argpartition(dist_vec, top)[:top]
+#             pred_top_intn = [train_intn[indx] for indx in pred_top_indx]
+        #     end_time = time.time()
+        #     time_count.append(end_time-start_time)
+            #
+            if test_intn[c] == pred_intn:
+                count = count + 1
+#             if test_intn[c] in pred_top_intn:
+#                 count1 = count1 + 1
+
+
+#     avg_inf_time = sum(time_count) / len(test_ques) * 1000
+    p1 = count / len(test_ques)
+    print("P@1 = " + str(count / len(test_ques)))
+#     print("P@5 = " + str(count1 / len(test_ques)))
+#     print("Inference Time = " + str(avg_inf_time) + " msec.")
+    return p1
 
 def _main():
     parsed_args, hparams = parse_args_and_hparams()
@@ -129,11 +219,13 @@ def _main():
 
     if hparams.task.lower() not in ["clinc", "hwu", "banking", "wallet", "alliance", "bank_split"]:
         raise ValueError(f"{hparams.task} is not a valid task")
-
+    hparams.task = over_ride_dataset
+    hparams.encoder_type = algo
+    
     encoder_client = get_encoder_client(hparams.encoder_type,
                                         cache_dir=hparams.cache_dir)
 
-    categories, encodings, labels = _preprocess_data(
+    categories, encodings, labels, train, test = _preprocess_data(
         encoder_client, hparams, parsed_args.data_dir)
 
     accs = []
@@ -147,12 +239,19 @@ def _main():
 
     for seed in range(hparams.seeds):
         glog.info(f"### Seed {seed} ###")
-        model, eval_acc_history = train_model(
+
+        if algo=='rf_tfidf':
+            acc = rf_tfidf(train, test)
+            return over_ride_sample_no, acc
+        elif algo == 'sbert_cosine':
+            acc = sbert_cosine(train, test)
+            return over_ride_sample_no, acc
+        else:
+            model, eval_acc_history = train_model(
             encodings[_TRAIN], labels[_TRAIN], categories, hparams,
             validation_data=validation_data, verbose=verbose)
-
-        _, acc = model.evaluate(encodings[_TEST], labels[_TEST], verbose=0)
-        print(_, 'loss of evaluation')
+            _, acc = model.evaluate(encodings[_TEST], labels[_TEST], verbose=0)
+#         print(_, 'loss of evaluation')
 #         print('PREDICT')
 #         pred = model.predict(encodings[_TEST], labels[_TEST])
         
@@ -202,12 +301,17 @@ def _main():
     end_time = datetime.now()
     delta = end_time - start_time
     print('TIME DELTA:', delta)
-    return (over_ride_sample_no, acc, memory_pred, delta)
+    return (over_ride_sample_no, acc, memory_pred, delta, hparams.task)
 
 if __name__ == "__main__":
-    finfin=[]
-    for over_ride_sample_no in [1,2,3,5,10,20,'full']:
-        mainout=_main()
-        finfin.append(mainout)
-    for i in finfin:
-        print('finfin:',i)
+    for algo in ['rf_tfidf']: #['sbert','use','convert','combined','laser_convert_use']:'sbert_cosine',
+        for over_ride_dataset in [ "wallet", "alliance", "bank_split"]:
+            res = pd.DataFrame(columns=[3,5,10,15,20,100, 'full'], index=[1,2,3,5,10,20, 'full'])
+            for over_ride_sample_no in res.index:
+                for over_ride_no_classes in res.columns:
+                    mainout=_main()
+                    res.loc[over_ride_sample_no,over_ride_no_classes]=mainout[1]
+            res.to_csv(f'200930_{algo}_{over_ride_dataset}.csv')
+            print(over_ride_dataset, algo)
+            print(res)
+
