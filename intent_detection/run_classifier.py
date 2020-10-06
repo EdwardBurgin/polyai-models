@@ -58,11 +58,8 @@ def _preprocess_data(encoder_client, hparams, data_dir):
     """
     labels = {}
     encodings = {}
-    if hparams.task=='wallet':
-        test = pd.read_csv('/polyai-models/polyai-models/200909_test_huawei_wallet_30strat_min3_manyanswers.csv')
-        train = pd.read_csv('/polyai-models/polyai-models/200909_train_huawei_wallet_60strat_min3_manyanswers.csv')
-        val = pd.read_csv('/polyai-models/polyai-models/200909_val_huawei_wallet_10strat_min3_manyanswers.csv')
-    elif hparams.task=='bank_split':
+
+    if hparams.task=='bank_split':
         train=pd.read_csv('/workspace/polyai-models/banking_data/200911_train60_banking_data.csv')
         val=pd.read_csv('/workspace/polyai-models/banking_data/200911_val10_banking_data.csv')
         test=pd.read_csv('/workspace/polyai-models/banking_data/200911_test30_banking_data.csv')
