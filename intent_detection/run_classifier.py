@@ -301,8 +301,8 @@ def _main():
     return (over_ride_sample_no, acc, memory_pred, delta, hparams.task)
 
 if __name__ == "__main__":
-    for algo in ['rf_tfidf']: #['sbert','use','convert','combined','laser_convert_use']:'sbert_cosine',
-        for over_ride_dataset in [ "wallet", "alliance", "bank_split"]:
+    for algo in ['use','convert','combined']:
+        for over_ride_dataset in ["alliance", "bank_split"]:
             res = pd.DataFrame(columns=[3,5,10,15,20,100, 'full'], index=[1,2,3,5,10,20, 'full'])
             for over_ride_sample_no in res.index:
                 for over_ride_no_classes in res.columns:
