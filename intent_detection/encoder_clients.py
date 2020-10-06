@@ -23,10 +23,9 @@ from tqdm import tqdm
 
 from encoder_client import EncoderClient
 
-from laserembeddings import Laser
 
 from sentence_transformers import SentenceTransformer
-sbert_model = 'roberta-large-nli-stsb-mean-tokens' #'distilbert-base-nli-mean-tokens'
+
 
 
 
