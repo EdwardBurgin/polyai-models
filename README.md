@@ -7,7 +7,7 @@ Other useful commands:
 docker build -t tensorflow114 .
 ```
 ```
-docker run -it --gpus all -p 9000:9000 -v /media/aiops/nvme_new/EDWARD/nlp_code/tf_docker_share:/workspace/polyai-models tensorflow114
+docker run -it --gpus all -p 9000:9000 -v /media/:/workspace/polyai-models tensorflow114
 ```
 Run a notebook and expose port 9000 to the internet: 
 ```
